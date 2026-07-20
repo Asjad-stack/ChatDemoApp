@@ -1,3 +1,6 @@
+ENV['RCT_USE_PREBUILT_RNCORE'] = '0'
+ENV['RCT_USE_RN_DEP'] = '0'
+
 # Resolve react_native_pods.rb with node to allow for hoisting
 require Pod::Executable.execute_command(
   'node',
@@ -14,6 +17,17 @@ require Pod::Executable.execute_command(
 platform :ios, min_ios_version_supported
 
 prepare_react_native_project!
+
+# Workaround for RNFirebase + precompiled React Native / use_frameworks
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if pod.name.start_with?('RNFB')
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
+  end
+end
 
 target 'MyChatApp' do
   use_frameworks! :linkage => :static

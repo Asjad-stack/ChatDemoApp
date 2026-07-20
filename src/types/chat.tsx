@@ -1,4 +1,4 @@
-export type MessageStatus = 'sending' | 'sent' | 'failed';
+export type MessageStatus = 'sending' | 'sent' | 'read' | 'failed';
 
 export type Message = {
   id: string;
@@ -6,6 +6,7 @@ export type Message = {
   senderId: string;
   receiverId: string;
   createdAt?: any;
+  readAt?: any;
   status?: MessageStatus;
   clientMessageId?: string;
 };
@@ -17,4 +18,9 @@ export type ChatItem = {
   lastMessageSenderId?: string;
   lastMessageAt?: any;
   updatedAt?: any;
+};
+
+export type AppUser = {
+  uid: string;
+  isAnonymous: boolean;
 };

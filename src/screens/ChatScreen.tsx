@@ -12,16 +12,18 @@ import {
 } from 'react-native';
 
 import { Message } from '../types/chat';
-import { USER_1_ID, USER_2_ID } from '../constants/chat';
 import { styles } from './styles';
 import useChatScreen from './Hooks';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RootStackParamList } from '../navigation/RootNavigator';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-const ChatScreen = () => {
+type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
+
+const ChatScreen = ({ route }: Props) => {
+  const { chatId, currentUserId, otherUserId } = route.params;
   const {
-    currentUserId,
     messages,
-    setCurrentUserId,
     loading,
     sending,
     sendMessage,
@@ -29,7 +31,15 @@ const ChatScreen = () => {
     setMessage,
     formatTime,
     retryMessage,
-  } = useChatScreen();
+  } = useChatScreen({
+    chatId,
+    currentUserId,
+    otherUserId,
+  });
+
+  console.log('Chat ID:', chatId);
+  console.log('Current User:', currentUserId);
+  console.log('Other User:', otherUserId);
 
   const flatListRef = useRef<FlatList<Message>>(null);
 
@@ -53,9 +63,22 @@ const ChatScreen = () => {
         <Text style={styles.messageText}>{item.text}</Text>
         <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
 
-        {item.senderId == currentUserId && item.status && (
-          <Text style={styles.statusText}>
-            {isFailed ? 'failed • tap to retry' : item.status}
+        {item.senderId === currentUserId && item.status && (
+          <Text
+            style={[
+              styles.statusText,
+              item.status === 'read' && { color: '#38BDF8' },
+            ]}
+          >
+            {isFailed
+              ? 'failed • tap to retry'
+              : item.status === 'sending'
+              ? '◷'
+              : item.status === 'sent'
+              ? '✓'
+              : item.status === 'read'
+              ? '✓✓'
+              : ''}
           </Text>
         )}
       </TouchableOpacity>
@@ -66,18 +89,7 @@ const ChatScreen = () => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Firebase Chat</Text>
-
-        <TouchableOpacity
-          style={styles.switchButton}
-          onPress={() =>
-            setCurrentUserId(prev =>
-              prev === USER_1_ID ? USER_2_ID : USER_1_ID,
-            )
-          }
-        >
-          <Text style={styles.switchText}>Using: {currentUserId}</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chat with {otherUserId}</Text>
       </View>
 
       {loading ? (

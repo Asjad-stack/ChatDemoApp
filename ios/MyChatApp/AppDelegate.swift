@@ -2,6 +2,7 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+import Firebase
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -22,13 +23,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     reactNativeFactory = factory
 
     window = UIWindow(frame: UIScreen.main.bounds)
+    FirebaseApp.configure()
 
     factory.startReactNative(
       withModuleName: "MyChatApp",
       in: window,
       launchOptions: launchOptions
     )
-
     return true
   }
 }
