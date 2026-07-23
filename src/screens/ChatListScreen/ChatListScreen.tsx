@@ -29,66 +29,32 @@ const ChatListScreen = ({ navigation }: Props) => {
     if (!currentUserId) {
       return;
     }
-    const chatsRef = collection(db, 'chats');
-    const chatsQuery = query(
-      chatsRef,
-      where('participants', 'array-contains', currentUserId),
-      orderBy('lastMessageAt', 'desc'),
-      limit(50),
-    );
+
+    const usersRef = collection(db, 'users');
+
     const unsubscribe = onSnapshot(
-      chatsQuery,
+      usersRef,
       snapshot => {
-        if (!snapshot) {
-          console.log('Chat snapshot is null');
-          return;
-        }
-        const chatList: ChatItem[] = snapshot.docs.map(item => {
-          const data = item.data();
-          return {
-            id: item.id,
-            participants: data.participants || [],
-            lastMessage: data.lastMessage || '',
-            lastMessageSenderId: data.lastMessageSenderId || '',
-            lastMessageAt: data.lastMessageAt,
-            updatedAt: data.updatedAt,
-          };
-        });
-        setChats(chatList);
+        const userList: AppUser[] = snapshot.docs
+          .map(item => {
+            const data = item.data();
+
+            return {
+              uid: data.uid,
+              isAnonymous: data.isAnonymous,
+            };
+          })
+          .filter(user => user.uid !== currentUserId);
+
+        setUsers(userList);
       },
       error => {
-        console.log('Chat list Firestore error:', error);
+        console.log('Users listener error:', error);
       },
     );
 
     return () => unsubscribe();
   }, [currentUserId]);
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
-    try {
-      const currentUserId = getAuth().currentUser?.uid;
-      if (!currentUserId) {
-        return;
-      }
-      const userRef = collection(db, 'users');
-      const usersQuery = query(userRef, where('uid', '!=', currentUserId));
-      const snapshot = await getDocs(usersQuery);
-      const userList: AppUser[] = snapshot.docs.map(item => {
-        const data = item?.data();
-        return {
-          uid: data.uid,
-          isAnonymous: data.isAnonymous,
-        };
-      });
-      setUsers(userList);
-    } catch (error) {
-      console.log('Load users error:', error);
-    }
-  };
 
   const createChatId = (userA: string, userB: string) => {
     return [userA, userB].sort().join('-');
@@ -125,7 +91,11 @@ const ChatListScreen = ({ navigation }: Props) => {
     if (!currentUserId) {
       return null;
     }
+
     const otherUserId = item.participants.find(id => id !== currentUserId);
+
+    const isMyLastMessage = item.lastMessageSenderId === currentUserId;
+
     return (
       <TouchableOpacity
         activeOpacity={0.6}
@@ -135,7 +105,9 @@ const ChatListScreen = ({ navigation }: Props) => {
         <Text style={styles.name}>{otherUserId || 'Unknown User'}</Text>
 
         <Text style={styles.message} numberOfLines={1}>
-          {item.lastMessage || 'No messages yet'}
+          {item.lastMessage
+            ? `${isMyLastMessage ? 'You: ' : ''}${item.lastMessage}`
+            : 'No messages yet'}
         </Text>
       </TouchableOpacity>
     );
@@ -160,9 +132,10 @@ const ChatListScreen = ({ navigation }: Props) => {
 
       <FlatList
         data={chats}
-        keyExtractor={item => item?.id}
+        keyExtractor={item => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
